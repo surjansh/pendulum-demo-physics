@@ -42,7 +42,7 @@
     #lengthControl {
       position: absolute;
       top: 50%;
-      left: 20px;
+      right: 20px; /* Move to right */
       transform: translateY(-50%) rotate(-90deg);
       display: flex;
       align-items: center;
@@ -78,7 +78,7 @@
     #periodDisplay {
       position: absolute;
       top: 20%;
-      right: 10px;
+      left: 10px; /* Move to the left */
       padding: 10px 20px;
       background: rgba(255,255,255,0.8);
       border-radius: 8px;
@@ -192,10 +192,10 @@
 
     if (aspectRatio > 1) {
       // Mobile-like portrait mode
-      lengthControl.style.left = '8px';  // Reduce left margin in portrait mode
+      lengthControl.style.right = '8px';  // Reduce right margin in portrait mode
     } else {
       // Landscape or wide screen
-      lengthControl.style.left = '20px'; // Restore original margin
+      lengthControl.style.right = '20px'; // Restore original margin
     }
   }
 
