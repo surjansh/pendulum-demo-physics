@@ -1,76 +1,233 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pendulum Swing</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pendulum Simulation</title>
+  
+  <!-- MathJax for LaTeX rendering -->
+  <script type="text/javascript" async 
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
+      background: #fff;
+      color: #000;
+      font-family: sans-serif;
       overflow: hidden;
       height: 100%;
-      background-color: #222;
     }
+
     canvas {
       display: block;
+      background: #fff;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.9);
+      padding: 8px 16px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+
+    #lengthControl {
+      position: absolute;
+      top: 50%;
+      left: 10px;
+      transform: translateY(-50%) rotate(-90deg);
+      background: rgba(255,255,255,0.9);
+      padding: 8px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    #restartBtn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 8px 14px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      z-index: 2;
+    }
+
+    #restartBtn:hover {
+      background: #1565c0;
+    }
+
+    input[type=range] {
+      width: 120px;
+    }
+
+    #periodDisplay {
+      position: absolute;
+      top: 80px;
+      right: 10px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 2;
+    }
+
+    #formula {
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    #result {
+      font-size: 18px;
     }
   </style>
 </head>
 <body>
+  <canvas id="pendulumCanvas"></canvas>
+
+  <div id="controls">
+    <label for="gravitySlider">Gravity:</label>
+    <input type="range" id="gravitySlider" min="5" max="50" step="0.1" value="9.8">
+    <span id="gravityValue">9.8 m/s²</span>
+  </div>
+
+  <div id="lengthControl">
+    <label for="lengthSlider">Length:</label>
+    <input type="range" id="lengthSlider" min="0.5" max="5" step="0.1" value="4">
+    <span id="lengthValue">4.0 m</span>
+  </div>
+
+  <button id="restartBtn">Restart</button>
+
+  <div id="periodDisplay">
+    <div id="formula">\( T = 2\pi \sqrt{\frac{L}{g}} \)</div>
+    <div id="result">T = 4.01 s</div>
+  </div>
+
   <script>
-    const { Engine, Render, Runner, World, Bodies, Constraint } = Matter;
+    const canvas = document.getElementById('pendulumCanvas');
+    const ctx = canvas.getContext('2d');
 
-    // Create engine
-    const engine = Engine.create();
-    const world = engine.world;
+    const gravitySlider = document.getElementById('gravitySlider');
+    const gravityValue = document.getElementById('gravityValue');
 
-    // Set up canvas size
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const lengthSlider = document.getElementById('lengthSlider');
+    const lengthValue = document.getElementById('lengthValue');
 
-    // Create renderer
-    const render = Render.create({
-      element: document.body,
-      engine: engine,
-      options: {
-        width: width,
-        height: height,
-        wireframes: false,
-        background: '#111'
-      }
+    const restartBtn = document.getElementById('restartBtn');
+    const result = document.getElementById('result');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      lengthPixels = calculateLengthPixels();
     });
 
-    // Run the engine and renderer
-    Render.run(render);
-    const runner = Runner.create();
-    Runner.run(runner, engine);
+    resizeCanvas();
 
-    // Create the pendulum system
-    const ball = Bodies.circle(width / 2, height / 4 + 100, 40, {
-      restitution: 0.8,
-      render: { fillStyle: '#4caf50' }
+    const origin = { x: canvas.width / 2, y: 80 };
+
+    let angle = Math.PI / 4;
+    let aVelocity = 0;
+    let aAcceleration = 0;
+    let timeScale = 0.315;
+
+    let gravity = parseFloat(gravitySlider.value);
+    let lengthMeters = parseFloat(lengthSlider.value);
+
+    const screenHeight = canvas.height;
+    const minLengthScale = 0.5;
+    const maxLengthScale = 0.7;
+
+    function calculateLengthPixels() {
+      return (lengthMeters - 1) * (maxLengthScale - minLengthScale) * canvas.height / 4 + minLengthScale * canvas.height;
+    }
+
+    let lengthPixels = calculateLengthPixels();
+
+    gravitySlider.addEventListener('input', () => {
+      gravity = parseFloat(gravitySlider.value);
+      gravityValue.textContent = `${gravity.toFixed(1)} m/s²`;
+      updatePeriod();
     });
 
-    const top = Bodies.rectangle(width / 2, height / 4, 120, 20, { isStatic: true, render: { fillStyle: '#222' } });
-    const rope = Constraint.create({
-      bodyA: top,
-      bodyB: ball,
-      pointB: { x: 0, y: 0 },
-      stiffness: 1,
-      length: 200
+    lengthSlider.addEventListener('input', () => {
+      lengthMeters = parseFloat(lengthSlider.value);
+      lengthPixels = calculateLengthPixels();
+      lengthValue.textContent = `${lengthMeters.toFixed(1)} m`;
+      updatePeriod();
     });
 
-    // Add to world
-    World.add(world, [ball, top, rope]);
+    restartBtn.addEventListener('click', () => {
+      angle = Math.PI / 4;
+      aVelocity = 0;
+      aAcceleration = 0;
+    });
 
-    // Add ground
-    const ground = Bodies.rectangle(width / 2, height - 50, width, 50, { isStatic: true });
-    World.add(world, ground);
+    function updatePeriod() {
+      const period = 2 * Math.PI * Math.sqrt(lengthMeters / gravity);
+      result.textContent = `T = ${period.toFixed(2)} s`;
+    }
 
-    // Adjust gravity if necessary
-    world.gravity.y = 1;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      aAcceleration = (-1 * gravity / lengthPixels) * Math.sin(angle) * timeScale;
+      aVelocity += aAcceleration * timeScale;
+      angle += aVelocity * timeScale;
+      aVelocity *= 0.999;
+
+      const x = origin.x + lengthPixels * Math.sin(angle);
+      const y = origin.y + lengthPixels * Math.cos(angle);
+
+      ctx.beginPath();
+      ctx.moveTo(origin.x, origin.y);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.fillStyle = "#4caf50";
+      ctx.fill();
+      ctx.strokeStyle = "#000";
+      ctx.stroke();
+
+      requestAnimationFrame(draw);
+    }
+
+    updatePeriod();
+    draw();
   </script>
 </body>
 </html>
