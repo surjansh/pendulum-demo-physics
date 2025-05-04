@@ -18,14 +18,11 @@
       color: #000;
       font-family: sans-serif;
       overflow: hidden;
-      height: 100%;
     }
 
     canvas {
       display: block;
       background: #fff;
-      width: 100vw;
-      height: 100vh;
     }
 
     #controls {
@@ -33,28 +30,26 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255,255,255,0.9);
-      padding: 8px 16px;
-      border-radius: 10px;
+      background: rgba(255,255,255,0.8);
+      padding: 10px 20px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       gap: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      font-size: 14px;
     }
 
     #lengthControl {
       position: absolute;
       top: 50%;
-      left: 10px;
+      left: 20px;
       transform: translateY(-50%) rotate(-90deg);
-      background: rgba(255,255,255,0.9);
-      padding: 8px 12px;
-      border-radius: 10px;
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 14px;
+      background: rgba(255,255,255,0.8);
+      padding: 8px 12px;
+      border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
@@ -66,11 +61,10 @@
       background: #1976d2;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       font-size: 14px;
       cursor: pointer;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
-      z-index: 2;
     }
 
     #restartBtn:hover {
@@ -78,156 +72,155 @@
     }
 
     input[type=range] {
-      width: 120px;
+      width: 200px;
     }
 
     #periodDisplay {
       position: absolute;
-      top: 80px;
+      top: 20%;
       right: 10px;
-      padding: 10px 14px;
-      background: rgba(255,255,255,0.9);
-      border-radius: 10px;
-      font-size: 16px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 8px;
+      font-size: 18px;
       font-weight: bold;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
       align-items: center;
-      z-index: 2;
     }
 
     #formula {
-      font-size: 14px;
-      margin-bottom: 6px;
+      font-size: 16px;
+      margin-bottom: 10px;
     }
 
     #result {
-      font-size: 18px;
+      font-size: 22px;
+    }
+
+    /* Mobile specific adjustments */
+    @media (max-width: 768px) {
+      #lengthControl {
+        left: 0;
+        padding-left: 6px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
     }
   </style>
 </head>
 <body>
-  <canvas id="pendulumCanvas"></canvas>
+<canvas id="pendulumCanvas"></canvas>
 
-  <div id="controls">
-    <label for="gravitySlider">Gravity:</label>
-    <input type="range" id="gravitySlider" min="5" max="50" step="0.1" value="9.8">
-    <span id="gravityValue">9.8 m/s²</span>
-  </div>
+<div id="controls">
+  <label for="gravitySlider">Gravity:</label>
+  <input type="range" id="gravitySlider" min="5" max="50" step="0.1" value="9.8">
+  <span id="gravityValue">9.8 m/s²</span>
+</div>
 
-  <div id="lengthControl">
-    <label for="lengthSlider">Length:</label>
-    <input type="range" id="lengthSlider" min="0.5" max="5" step="0.1" value="4">
-    <span id="lengthValue">4.0 m</span>
-  </div>
+<div id="lengthControl">
+  <label for="lengthSlider">Length:</label>
+  <input type="range" id="lengthSlider" min="0.5" max="5" step="0.1" value="4">
+  <span id="lengthValue">4.0 m</span>
+</div>
 
-  <button id="restartBtn">Restart</button>
+<button id="restartBtn">Restart</button>
 
-  <div id="periodDisplay">
-    <div id="formula">\( T = 2\pi \sqrt{\frac{L}{g}} \)</div>
-    <div id="result">T = 4.01 s</div>
-  </div>
+<div id="periodDisplay">
+  <div id="formula">\( T = 2\pi \sqrt{\frac{L}{g}} \)</div>
+  <div id="result">T = 4.01 s</div>
+</div>
 
-  <script>
-    const canvas = document.getElementById('pendulumCanvas');
-    const ctx = canvas.getContext('2d');
+<script>
+  const canvas = document.getElementById('pendulumCanvas');
+  const ctx = canvas.getContext('2d');
 
-    const gravitySlider = document.getElementById('gravitySlider');
-    const gravityValue = document.getElementById('gravityValue');
+  const gravitySlider = document.getElementById('gravitySlider');
+  const gravityValue = document.getElementById('gravityValue');
 
-    const lengthSlider = document.getElementById('lengthSlider');
-    const lengthValue = document.getElementById('lengthValue');
+  const lengthSlider = document.getElementById('lengthSlider');
+  const lengthValue = document.getElementById('lengthValue');
 
-    const restartBtn = document.getElementById('restartBtn');
-    const result = document.getElementById('result');
+  const restartBtn = document.getElementById('restartBtn');
+  const result = document.getElementById('result');
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-    window.addEventListener('resize', () => {
-      resizeCanvas();
-      lengthPixels = calculateLengthPixels();
-    });
+  const origin = { x: canvas.width / 2, y: 100 };
 
-    resizeCanvas();
+  let angle = Math.PI / 4;
+  let aVelocity = 0;
+  let aAcceleration = 0;
+  let timeScale = 0.315;
 
-    const origin = { x: canvas.width / 2, y: 80 };
+  let gravity = parseFloat(gravitySlider.value);
+  let lengthMeters = parseFloat(lengthSlider.value);
 
-    let angle = Math.PI / 4;
-    let aVelocity = 0;
-    let aAcceleration = 0;
-    let timeScale = 0.315;
+  const screenHeight = canvas.height;
+  const minLengthScale = 0.5;
+  const maxLengthScale = 0.7;
 
-    let gravity = parseFloat(gravitySlider.value);
-    let lengthMeters = parseFloat(lengthSlider.value);
+  function calculateLengthPixels() {
+    return (lengthMeters - 1) * (maxLengthScale - minLengthScale) * screenHeight / 4 + minLengthScale * screenHeight;
+  }
 
-    const screenHeight = canvas.height;
-    const minLengthScale = 0.5;
-    const maxLengthScale = 0.7;
+  let lengthPixels = calculateLengthPixels();
 
-    function calculateLengthPixels() {
-      return (lengthMeters - 1) * (maxLengthScale - minLengthScale) * canvas.height / 4 + minLengthScale * canvas.height;
-    }
-
-    let lengthPixels = calculateLengthPixels();
-
-    gravitySlider.addEventListener('input', () => {
-      gravity = parseFloat(gravitySlider.value);
-      gravityValue.textContent = `${gravity.toFixed(1)} m/s²`;
-      updatePeriod();
-    });
-
-    lengthSlider.addEventListener('input', () => {
-      lengthMeters = parseFloat(lengthSlider.value);
-      lengthPixels = calculateLengthPixels();
-      lengthValue.textContent = `${lengthMeters.toFixed(1)} m`;
-      updatePeriod();
-    });
-
-    restartBtn.addEventListener('click', () => {
-      angle = Math.PI / 4;
-      aVelocity = 0;
-      aAcceleration = 0;
-    });
-
-    function updatePeriod() {
-      const period = 2 * Math.PI * Math.sqrt(lengthMeters / gravity);
-      result.textContent = `T = ${period.toFixed(2)} s`;
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      aAcceleration = (-1 * gravity / lengthPixels) * Math.sin(angle) * timeScale;
-      aVelocity += aAcceleration * timeScale;
-      angle += aVelocity * timeScale;
-      aVelocity *= 0.999;
-
-      const x = origin.x + lengthPixels * Math.sin(angle);
-      const y = origin.y + lengthPixels * Math.cos(angle);
-
-      ctx.beginPath();
-      ctx.moveTo(origin.x, origin.y);
-      ctx.lineTo(x, y);
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
-      ctx.fillStyle = "#4caf50";
-      ctx.fill();
-      ctx.strokeStyle = "#000";
-      ctx.stroke();
-
-      requestAnimationFrame(draw);
-    }
-
+  gravitySlider.addEventListener('input', () => {
+    gravity = parseFloat(gravitySlider.value);
+    gravityValue.textContent = `${gravity.toFixed(1)} m/s²`;
     updatePeriod();
-    draw();
-  </script>
+  });
+
+  lengthSlider.addEventListener('input', () => {
+    lengthMeters = parseFloat(lengthSlider.value);
+    lengthPixels = calculateLengthPixels();
+    lengthValue.textContent = `${lengthMeters.toFixed(1)} m`;
+    updatePeriod();
+  });
+
+  restartBtn.addEventListener('click', () => {
+    angle = Math.PI / 4;
+    aVelocity = 0;
+    aAcceleration = 0;
+  });
+
+  function updatePeriod() {
+    const period = 2 * Math.PI * Math.sqrt(lengthMeters / gravity);
+    result.textContent = `T = ${period.toFixed(2)} s`;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    aAcceleration = (-1 * gravity / lengthPixels) * Math.sin(angle) * timeScale;
+    aVelocity += aAcceleration * timeScale;
+    angle += aVelocity * timeScale;
+    aVelocity *= 0.999;
+
+    const x = origin.x + lengthPixels * Math.sin(angle);
+    const y = origin.y + lengthPixels * Math.cos(angle);
+
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(x, y, 30, 0, Math.PI * 2);
+    ctx.fillStyle = "#4caf50";
+    ctx.fill();
+    ctx.strokeStyle = "#000";
+    ctx.stroke();
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+</script>
 </body>
 </html>
