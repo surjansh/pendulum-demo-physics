@@ -40,16 +40,16 @@
     }
 
     #lengthControl {
-      position: absolute;
-      bottom: 60%;
-      right: 10px; /* or adjust as needed */
-      transform: translateY(-50%) rotate(-90deg);
-      transform-origin: right center; /* optional, adjusts the pivot */
+      position: fixed; /* Fixed positioning */
+      bottom: 60%; /* Distance from the bottom */
+      right: 7%; /* Apply a right margin of 20px */
+      transform: rotate(-90deg);
+      transform-origin: right center;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       background: rgba(255,255,255,0.8);
-      padding: 8px 12px;
+      padding: 12px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
@@ -79,7 +79,7 @@
     #periodDisplay {
       position: absolute;
       top: 20%;
-      left: 10px; /* Move to the left */
+      left: 10px;
       padding: 10px 20px;
       background: rgba(255,255,255,0.8);
       border-radius: 8px;
@@ -186,23 +186,6 @@
     const period = 2 * Math.PI * Math.sqrt(lengthMeters / gravity);
     result.textContent = `T = ${period.toFixed(2)} s`;
   }
-
-  function adjustLengthSliderPosition() {
-    const lengthControl = document.getElementById('lengthControl');
-    const aspectRatio = window.innerHeight / window.innerWidth;
-
-    if (aspectRatio > 1) {
-      // Mobile-like portrait mode
-      lengthControl.style.right = '8px';  // Reduce right margin in portrait mode
-    } else {
-      // Landscape or wide screen
-      lengthControl.style.right = '20px'; // Restore original margin
-    }
-  }
-
-  // Call on load and on resize
-  adjustLengthSliderPosition();
-  window.addEventListener('resize', adjustLengthSliderPosition);
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
