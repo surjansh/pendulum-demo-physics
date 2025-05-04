@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pendulum Simulation</title>
   
+  <!-- Add MathJax for LaTeX rendering -->
   <script type="text/javascript" async 
     src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
   </script>
@@ -98,16 +99,6 @@
       font-size: 22px;
     }
 
-    /* 🔧 Fix: smaller left margin ONLY on mobile */
-    @media (max-aspect-ratio: 1/1) {
-      #lengthControl {
-        left: 8px; /* reduce from 20px */
-      }
-
-      input[type=range] {
-        width: 200px; /* keep original width */
-      }
-    }
   </style>
 </head>
 <body>
@@ -143,6 +134,7 @@
   const lengthValue = document.getElementById('lengthValue');
 
   const restartBtn = document.getElementById('restartBtn');
+  const periodDisplay = document.getElementById('periodDisplay');
   const result = document.getElementById('result');
 
   canvas.width = window.innerWidth;
@@ -158,10 +150,12 @@
   let gravity = parseFloat(gravitySlider.value);
   let lengthMeters = parseFloat(lengthSlider.value);
 
+  // Screen height to percentage scale factor for length
   const screenHeight = canvas.height;
-  const minLengthScale = 0.5;
-  const maxLengthScale = 0.7;
+  const minLengthScale = 0.5; // 50% of the screen height for 1 meter
+  const maxLengthScale = 0.7; // 70% of the screen height for 5 meters
 
+  // Convert length in meters to pixels based on screen height
   function calculateLengthPixels() {
     return (lengthMeters - 1) * (maxLengthScale - minLengthScale) * screenHeight / 4 + minLengthScale * screenHeight;
   }
@@ -192,17 +186,37 @@
     result.textContent = `T = ${period.toFixed(2)} s`;
   }
 
+  function adjustLengthSliderPosition() {
+    const lengthControl = document.getElementById('lengthControl');
+    const aspectRatio = window.innerHeight / window.innerWidth;
+
+    if (aspectRatio > 1) {
+      // Mobile-like portrait mode
+      lengthControl.style.left = '8px';  // Reduce left margin in portrait mode
+    } else {
+      // Landscape or wide screen
+      lengthControl.style.left = '20px'; // Restore original margin
+    }
+  }
+
+  // Call on load and on resize
+  adjustLengthSliderPosition();
+  window.addEventListener('resize', adjustLengthSliderPosition);
+
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Physics update
     aAcceleration = (-1 * gravity / lengthPixels) * Math.sin(angle) * timeScale;
     aVelocity += aAcceleration * timeScale;
     angle += aVelocity * timeScale;
-    aVelocity *= 0.999;
+    aVelocity *= 0.999; // damping
 
+    // Position
     const x = origin.x + lengthPixels * Math.sin(angle);
     const y = origin.y + lengthPixels * Math.cos(angle);
 
+    // Draw string
     ctx.beginPath();
     ctx.moveTo(origin.x, origin.y);
     ctx.lineTo(x, y);
@@ -210,6 +224,7 @@
     ctx.lineWidth = 2;
     ctx.stroke();
 
+    // Draw bob
     ctx.beginPath();
     ctx.arc(x, y, 30, 0, Math.PI * 2);
     ctx.fillStyle = "#4caf50";
