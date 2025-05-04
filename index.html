@@ -98,14 +98,14 @@
       font-size: 22px;
     }
 
-    /* Mobile-specific tweaks */
-    @media (max-width: 768px) {
+    /* 🔧 Fix: smaller left margin ONLY on mobile */
+    @media (max-width: 600px) {
       #lengthControl {
-        left: 8px; /* reduced from 20px */
+        left: 8px; /* reduce from 20px */
       }
 
       input[type=range] {
-        width: 160px; /* reduced for smaller screens */
+        width: 200px; /* keep original width */
       }
     }
   </style>
