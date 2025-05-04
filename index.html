@@ -40,9 +40,9 @@
     }
 
     #lengthControl {
-      position: fixed; /* Fixed positioning */
-      bottom: 60%; /* Distance from the bottom */
-      right: 7%; /* Apply a right margin of 20px */
+      position: fixed;
+      bottom: 80%;
+      right: 7%;
       transform: rotate(-90deg);
       transform-origin: right center;
       display: flex;
@@ -52,6 +52,7 @@
       padding: 12px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      touch-action: none; /* Prevent interference with touch actions */
     }
 
     #restartBtn {
@@ -73,7 +74,31 @@
     }
 
     input[type=range] {
-      width: 200px;
+      width: 300px; /* Increased width for better touchability */
+      -webkit-appearance: none; /* Override default styles */
+      appearance: none;
+      height: 10px; /* Increased height for better usability */
+      background: #ddd;
+      border-radius: 5px;
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #4caf50;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: #4caf50;
+      border-radius: 50%;
+      cursor: pointer;
     }
 
     #periodDisplay {
